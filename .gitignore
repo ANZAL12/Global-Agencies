@@ -24,3 +24,6 @@ media/
 # Windows
 Thumbs.db
 
+test_script.py
+postman_collection.json
+

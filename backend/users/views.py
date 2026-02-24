@@ -6,6 +6,8 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from .models import User
+from core.permissions import IsAdminUserRole
+from .serializers import CreatePromoterSerializer
 
 
 class GoogleLoginView(APIView):
@@ -24,18 +26,21 @@ class GoogleLoginView(APIView):
             )
 
             email = idinfo.get("email")
-            name = idinfo.get("name")
             google_id = idinfo.get("sub")
 
-            # Get or create user
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    "role": "promoter",
-                    "google_id": google_id,
-                    "first_name": name
-                }
-            )
+            # Check if user exists
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response(
+                    {"error": "User not registered by admin"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Update google_id if missing
+            if not user.google_id:
+                user.google_id = google_id
+                user.save(update_fields=['google_id'])
 
             # Generate JWT
             refresh = RefreshToken.for_user(user)
@@ -61,3 +66,34 @@ class TestProtectedView(APIView):
             "user": request.user.email,
             "role": request.user.role
         })
+
+
+class CreatePromoterView(APIView):
+    permission_classes = [IsAdminUserRole]
+
+    def post(self, request):
+        serializer = CreatePromoterSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get('email')
+            shop_name = serializer.validated_data.get('shop_name', '')
+            
+            user = User.objects.create_user(
+                email=email,
+                role='promoter',
+                shop_name=shop_name,
+                is_active=True
+            )
+            
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                "message": "Promoter created successfully",
+                "user": {
+                    "email": user.email,
+                    "role": user.role,
+                    "shop_name": user.shop_name
+                },
+                "refresh": str(refresh),
+                "access": str(refresh.access_token)
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
