@@ -7,7 +7,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from .models import User
 from core.permissions import IsAdminUserRole
-from .serializers import CreatePromoterSerializer
+from .serializers import CreatePromoterSerializer, PromoterListSerializer, PasswordLoginSerializer, PromoterDetailSerializer
+from django.contrib.auth import authenticate
 
 
 class GoogleLoginView(APIView):
@@ -75,14 +76,23 @@ class CreatePromoterView(APIView):
         serializer = CreatePromoterSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data.get('email')
+            password = serializer.validated_data.get('password')
             shop_name = serializer.validated_data.get('shop_name', '')
+            full_name = serializer.validated_data.get('full_name', '')
+            phone_number = serializer.validated_data.get('phone_number', '')
+            gpay_number = serializer.validated_data.get('gpay_number', '')
             
             user = User.objects.create_user(
                 email=email,
                 role='promoter',
                 shop_name=shop_name,
+                full_name=full_name,
+                phone_number=phone_number,
+                gpay_number=gpay_number,
                 is_active=True
             )
+            user.set_password(password)
+            user.save()
             
             refresh = RefreshToken.for_user(user)
 
@@ -97,3 +107,46 @@ class CreatePromoterView(APIView):
                 "access": str(refresh.access_token)
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordLoginView(APIView):
+    def post(self, request):
+        serializer = PasswordLoginSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data.get('email')
+        password = serializer.validated_data.get('password')
+
+        user = authenticate(email=email, password=password)
+
+        if not user:
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Security checks
+        if not settings.DEBUG:
+            if user.role != 'admin':
+                return Response({"error": "Password login not allowed for this role in production"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Generate JWT
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "role": user.role
+        }, status=status.HTTP_200_OK)
+
+from rest_framework import generics
+
+class PromoterListView(generics.ListAPIView):
+    serializer_class = PromoterListSerializer
+    permission_classes = [IsAdminUserRole]
+
+    def get_queryset(self):
+        return User.objects.filter(role='promoter').order_by('-date_joined')
+
+class PromoterDetailView(generics.RetrieveAPIView):
+    serializer_class = PromoterDetailSerializer
+    permission_classes = [IsAdminUserRole]
+    queryset = User.objects.filter(role='promoter')
