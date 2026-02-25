@@ -29,3 +29,8 @@ class AnnouncementListView(generics.ListAPIView):
     queryset = Announcement.objects.all().order_by('-created_at')
     serializer_class = AnnouncementSerializer
     permission_classes = [IsAuthenticated]
+
+class AnnouncementDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Announcement.objects.all()
+    serializer_class = AnnouncementSerializer
+    permission_classes = [IsAdminUserRole]

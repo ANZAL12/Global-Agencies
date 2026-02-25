@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Button, Alert, TextInput } from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Button, Alert, TextInput, Modal, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
 import api from "../../../services/api";
 
 type SaleDetail = {
@@ -23,6 +24,7 @@ export default function SaleDetailScreen() {
     const [loading, setLoading] = useState(true);
     const [incentiveInput, setIncentiveInput] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isImageModalVisible, setIsImageModalVisible] = useState(false);
 
     useEffect(() => {
         fetchSaleDetails();
@@ -30,11 +32,6 @@ export default function SaleDetailScreen() {
 
     const fetchSaleDetails = async () => {
         try {
-            // The API doesn't have a single-sale GET endpoint? 
-            // The requirement says GET /sales/all/ and then show detail.
-            // We will fetch from /sales/all/ and filter by ID.
-            // Alternatively, the prompt implies there might be one. 
-            // Let's fetch all and find the single one. This handles state beautifully.
             const res = await api.get("/sales/all/");
             const found = res.data.find((s: SaleDetail) => s.id.toString() === id);
             if (found) {
@@ -124,6 +121,11 @@ export default function SaleDetailScreen() {
     const isPending = sale.status === "pending";
     const isApprovedUnpaid = sale.status === "approved" && sale.payment_status === "unpaid";
 
+    // Support image URLs lacking the absolute server path if requested locally
+    const getImageUrl = (url: string) => {
+        return url.startsWith('http') ? url : `http://10.28.84.177:8000${url}`;
+    };
+
     return (
         <ScrollView style={styles.container}>
             <View style={styles.card}>
@@ -162,7 +164,13 @@ export default function SaleDetailScreen() {
                 {sale.bill_image && (
                     <View style={styles.imageContainer}>
                         <Text style={styles.label}>Bill Image</Text>
-                        <Image source={{ uri: sale.bill_image }} style={styles.image} resizeMode="contain" />
+                        <TouchableOpacity onPress={() => setIsImageModalVisible(true)} activeOpacity={0.8} style={styles.thumbnailButton}>
+                            <Image source={{ uri: getImageUrl(sale.bill_image) }} style={styles.image} resizeMode="cover" />
+                            <View style={styles.zoomOverlay}>
+                                <MaterialIcons name="zoom-in" size={24} color="#fff" />
+                                <Text style={styles.zoomText}>Tap to Enlarge</Text>
+                            </View>
+                        </TouchableOpacity>
                     </View>
                 )}
 
@@ -201,8 +209,19 @@ export default function SaleDetailScreen() {
                         <Button title="Mark Incentive as Paid" onPress={handleMarkPaid} color="#9c27b0" />
                     </View>
                 )}
-
             </View>
+
+            {/* Enlarge Image Modal */}
+            {sale.bill_image && (
+                <Modal visible={isImageModalVisible} transparent={true} animationType="fade" onRequestClose={() => setIsImageModalVisible(false)}>
+                    <View style={styles.modalBackground}>
+                        <TouchableOpacity style={styles.closeModalButton} onPress={() => setIsImageModalVisible(false)}>
+                            <MaterialIcons name="close" size={32} color="#fff" />
+                        </TouchableOpacity>
+                        <Image source={{ uri: getImageUrl(sale.bill_image) }} style={styles.fullScreenImage} resizeMode="contain" />
+                    </View>
+                </Modal>
+            )}
         </ScrollView>
     );
 }
@@ -251,10 +270,45 @@ const styles = StyleSheet.create({
         borderTopColor: "#eee",
         paddingTop: 15,
     },
+    thumbnailButton: {
+        width: "100%",
+        height: 200,
+        borderRadius: 8,
+        overflow: 'hidden',
+        position: 'relative'
+    },
     image: {
         width: "100%",
-        height: 300,
-        borderRadius: 8,
+        height: "100%",
+    },
+    zoomOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'row',
+    },
+    zoomText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        marginLeft: 8,
+    },
+    modalBackground: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    closeModalButton: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        zIndex: 10,
+        padding: 10,
+    },
+    fullScreenImage: {
+        width: '100%',
+        height: '80%',
     },
     actionsContainer: {
         marginTop: 20,

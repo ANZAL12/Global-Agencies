@@ -1,0 +1,16 @@
+name: Keep Backend Alive
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render free-tier hibernation (which triggers after 15 mins)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows you to manually trigger it from GitHub Actions tab
+
+jobs:
+  ping-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend API
+        # Replace the URL below with your actual Render deployment URL if it's different.
+        run: |
+          curl -sSf https://your-backend-url.onrender.com/api/ || echo "Ping failed, but workflow continues"

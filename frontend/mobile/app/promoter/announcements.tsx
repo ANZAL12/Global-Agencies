@@ -6,7 +6,7 @@ import { useFocusEffect } from "expo-router";
 type Announcement = {
     id: number;
     title: string;
-    content: string;
+    description: string;
     image: string | null;
     created_at: string;
 };
@@ -67,7 +67,7 @@ export default function Announcements() {
                             <Image source={{ uri: item.image }} style={styles.image} resizeMode="cover" />
                         )}
 
-                        <Text style={styles.content}>{item.content}</Text>
+                        <Text style={styles.content}>{item.description}</Text>
                     </View>
                 )}
             />
