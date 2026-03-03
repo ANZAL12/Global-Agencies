@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import User
+import json
+from django.contrib.admin.models import LogEntry
 
 class CreatePromoterSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -34,3 +36,10 @@ class PromoterDetailSerializer(serializers.ModelSerializer):
         from sales.serializers import SaleEntrySerializer
         sales = obj.sales.all().order_by('-created_at')
         return SaleEntrySerializer(sales, many=True).data
+
+class AdminLogEntrySerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.email', default='unknown', read_only=True)
+
+    class Meta:
+        model = LogEntry
+        fields = ['id', 'action_time', 'username', 'content_type_id', 'object_id', 'object_repr', 'action_flag', 'change_message']

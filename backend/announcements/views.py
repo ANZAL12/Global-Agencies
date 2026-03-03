@@ -3,6 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from core.permissions import IsAdminUserRole
 from .models import Announcement
 from .serializers import AnnouncementSerializer
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from core.utils import log_admin_action
 
 class AnnouncementCreateView(generics.CreateAPIView):
     queryset = Announcement.objects.all()
@@ -11,6 +13,14 @@ class AnnouncementCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         announcement = serializer.save()
+        
+        # Log the action
+        log_admin_action(
+            user=self.request.user,
+            content_object=announcement,
+            action_flag=ADDITION,
+            change_message=f"Created announcement: {announcement.title}"
+        )
         
         # Notify promoters
         from users.models import User
@@ -48,3 +58,22 @@ class AnnouncementDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Announcement.objects.all()
     serializer_class = AnnouncementSerializer
     permission_classes = [IsAdminUserRole]
+
+    def perform_update(self, serializer):
+        announcement = serializer.save()
+        log_admin_action(
+            user=self.request.user,
+            content_object=announcement,
+            action_flag=CHANGE,
+            change_message=f"Updated announcement: {announcement.title}"
+        )
+
+    def perform_destroy(self, instance):
+        title = instance.title
+        log_admin_action(
+            user=self.request.user,
+            content_object=instance,
+            action_flag=DELETION,
+            change_message=f"Deleted announcement: {title}"
+        )
+        instance.delete()

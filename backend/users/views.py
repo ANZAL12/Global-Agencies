@@ -9,6 +9,8 @@ from .models import User
 from core.permissions import IsAdminUserRole
 from .serializers import CreatePromoterSerializer, PromoterListSerializer, PasswordLoginSerializer, PromoterDetailSerializer
 from django.contrib.auth import authenticate
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from core.utils import log_admin_action
 
 
 class GoogleLoginView(APIView):
@@ -94,6 +96,14 @@ class CreatePromoterView(APIView):
             user.set_password(password)
             user.save()
             
+            # Log the action
+            log_admin_action(
+                user=request.user,
+                content_object=user,
+                action_flag=ADDITION,
+                change_message=f"Created promoter: {user.email}"
+            )
+            
             refresh = RefreshToken.for_user(user)
 
             return Response({
@@ -138,6 +148,8 @@ class PasswordLoginView(APIView):
         }, status=status.HTTP_200_OK)
 
 from rest_framework import generics
+from django.contrib.admin.models import LogEntry
+from .serializers import PromoterListSerializer, AdminLogEntrySerializer
 
 class PromoterListView(generics.ListAPIView):
     serializer_class = PromoterListSerializer
@@ -162,3 +174,9 @@ class UpdatePushTokenView(APIView):
         request.user.expo_push_token = token
         request.user.save(update_fields=['expo_push_token'])
         return Response({"message": "Push token updated successfully"}, status=status.HTTP_200_OK)
+
+class AdminLogListView(generics.ListAPIView):
+    serializer_class = AdminLogEntrySerializer
+    permission_classes = [IsAdminUserRole]
+    queryset = LogEntry.objects.all().order_by('-action_time')
+

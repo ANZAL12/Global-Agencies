@@ -12,6 +12,7 @@ import AdminPromoters from './pages/admin/Promoters';
 import AdminSaleDetail from './pages/admin/SaleDetail';
 import AdminPromoterDetail from './pages/admin/PromoterDetail';
 import AdminAddPromoter from './pages/admin/AddPromoter';
+import AdminLogs from './pages/admin/Logs';
 
 function ProtectedRoute({ children, allowedRole }: { children: JSX.Element, allowedRole: string }) {
   const token = localStorage.getItem('access');
@@ -41,6 +42,7 @@ function App() {
         <Route path="promoters" element={<AdminPromoters />} />
         <Route path="add-promoter" element={<AdminAddPromoter />} />
         <Route path="promoter/:id" element={<AdminPromoterDetail />} />
+        <Route path="logs" element={<AdminLogs />} />
       </Route>
 
       {/* Promoter Routes */}

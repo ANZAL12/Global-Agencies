@@ -53,6 +53,13 @@ export default function AdminTabLayout() {
                     tabBarIcon: ({ color }) => <MaterialIcons name="people" size={24} color={color} />,
                 }}
             />
+            <Tabs.Screen
+                name="logs"
+                options={{
+                    title: "Logs",
+                    tabBarIcon: ({ color }) => <MaterialIcons name="history" size={24} color={color} />,
+                }}
+            />
         </Tabs>
     );
 }

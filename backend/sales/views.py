@@ -6,6 +6,8 @@ from .models import SaleEntry
 from .serializers import SaleEntrySerializer, SaleEntryCreateSerializer, SaleStatusUpdateSerializer
 from django.utils import timezone
 from core.notifications import send_push_message
+from django.contrib.admin.models import CHANGE
+from core.utils import log_admin_action
 
 class SaleCreateView(generics.CreateAPIView):
     serializer_class = SaleEntryCreateSerializer
@@ -43,6 +45,14 @@ class AdminSaleApproveView(generics.UpdateAPIView):
         instance.approved_by = self.request.user
         instance.approved_at = timezone.now()
         self.perform_update(serializer)
+
+        # Log the action
+        log_admin_action(
+            user=self.request.user,
+            content_object=instance,
+            action_flag=CHANGE,
+            change_message=f"Approved sale for {instance.product_name} by {instance.promoter.email if instance.promoter else 'N/A'}"
+        )
         
         # Send Notification to Promoter
         if instance.promoter and instance.promoter.expo_push_token:
@@ -67,6 +77,14 @@ class AdminSaleRejectView(generics.UpdateAPIView):
         
         instance.status = 'rejected'
         instance.save()
+        
+        # Log the action
+        log_admin_action(
+            user=self.request.user,
+            content_object=instance,
+            action_flag=CHANGE,
+            change_message=f"Rejected sale for {instance.product_name} by {instance.promoter.email if instance.promoter else 'N/A'}"
+        )
         
         # Send Notification to Promoter
         if instance.promoter and instance.promoter.expo_push_token:
@@ -93,6 +111,14 @@ class AdminSaleMarkPaidView(generics.UpdateAPIView):
         instance.payment_status = 'paid'
         instance.paid_at = timezone.now()
         instance.save()
+        
+        # Log the action
+        log_admin_action(
+            user=self.request.user,
+            content_object=instance,
+            action_flag=CHANGE,
+            change_message=f"Marked sale as PAID for {instance.product_name} by {instance.promoter.email if instance.promoter else 'N/A'}"
+        )
         
         # Send Notification to Promoter
         if instance.promoter and instance.promoter.expo_push_token:

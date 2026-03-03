@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, LayoutDashboard, Users, Megaphone, List, PlusCircle, BellRing } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users, Megaphone, List, PlusCircle, BellRing, Activity } from 'lucide-react';
 
 export default function Layout() {
     const location = useLocation();
@@ -18,7 +18,8 @@ export default function Layout() {
             { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
             { name: 'All Sales', path: '/admin/sales', icon: List },
             { name: 'Announcements', path: '/admin/announcements', icon: BellRing },
-            { name: 'Promoters', path: '/admin/promoters', icon: Users }
+            { name: 'Promoters', path: '/admin/promoters', icon: Users },
+            { name: 'Logs', path: '/admin/logs', icon: Activity }
         ]
         : role === 'promoter'
             ? [
