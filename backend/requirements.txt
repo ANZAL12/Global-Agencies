@@ -1,5 +1,5 @@
 dj_database_url==3.0.1
-Django==5.2.8
+Django==4.2.11
 djangorestframework==3.16.1
 djangorestframework_simplejwt==4.8.0
 exponent_server_sdk==2.2.0
