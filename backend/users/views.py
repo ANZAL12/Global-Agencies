@@ -41,6 +41,12 @@ class GoogleLoginView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
 
+            if not user.is_active:
+                return Response(
+                    {"error": "Account blocked contact admin"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
             # Update google_id if missing
             if not user.google_id:
                 user.google_id = google_id
@@ -130,6 +136,13 @@ class PasswordLoginView(APIView):
         email = serializer.validated_data.get('email')
         password = serializer.validated_data.get('password')
 
+        try:
+            user_check = User.objects.get(email=email)
+            if not user_check.is_active:
+                return Response({"error": "Account blocked contact admin"}, status=status.HTTP_403_FORBIDDEN)
+        except User.DoesNotExist:
+            pass # Let authenticate() handle the "invalid credentials" error below
+
         user = authenticate(email=email, password=password)
 
         if not user:
@@ -205,4 +218,30 @@ class ChangePasswordView(APIView):
         )
         
         return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
+
+class TogglePromoterStatusView(APIView):
+    permission_classes = [IsAdminUserRole]
+
+    def post(self, request, pk):
+        try:
+            promoter = User.objects.get(pk=pk, role='promoter')
+        except User.DoesNotExist:
+            return Response({"error": "Promoter not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Toggle status
+        promoter.is_active = not promoter.is_active
+        promoter.save(update_fields=['is_active'])
+
+        action_msg = "Enabled" if promoter.is_active else "Disabled"
+        log_admin_action(
+            user=request.user,
+            content_object=promoter,
+            action_flag=CHANGE,
+            change_message=f"{action_msg} promoter account: {promoter.email}"
+        )
+
+        return Response({
+            "message": f"Promoter {action_msg.lower()} successfully",
+            "is_active": promoter.is_active
+        }, status=status.HTTP_200_OK)
 

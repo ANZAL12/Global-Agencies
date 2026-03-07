@@ -43,6 +43,7 @@ export default function PromoterDetailScreen() {
     const router = useRouter();
     const [promoter, setPromoter] = useState<PromoterDetail | null>(null);
     const [loading, setLoading] = useState(true);
+    const [toggling, setToggling] = useState(false);
 
     const fetchPromoterDetail = async () => {
         try {
@@ -59,6 +60,39 @@ export default function PromoterDetailScreen() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const togglePromoterStatus = async () => {
+        if (!promoter) return;
+        Alert.alert(
+            "Confirm Action",
+            `Are you sure you want to ${promoter.is_active ? 'disable' : 'enable'} this account?`,
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: promoter.is_active ? "Disable Account" : "Enable Account",
+                    style: promoter.is_active ? "destructive" : "default",
+                    onPress: async () => {
+                        setToggling(true);
+                        try {
+                            const token = await safeStorage.getItem('access');
+                            const response = await api.post(
+                                `/auth/admin/promoter/${id}/toggle-status/`,
+                                {},
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            setPromoter({ ...promoter, is_active: response.data.is_active });
+                            Alert.alert("Success", response.data.message);
+                        } catch (error: any) {
+                            console.error("Error toggling status:", error);
+                            Alert.alert("Error", "Failed to update promoter status.");
+                        } finally {
+                            setToggling(false);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     useEffect(() => {
@@ -136,6 +170,20 @@ export default function PromoterDetailScreen() {
                 ListHeaderComponent={
                     <View style={styles.profileSection}>
                         <View style={styles.profileCard}>
+                            <View style={styles.headerRow}>
+                                <View style={[styles.badge, promoter.is_active ? styles.activeBadge : styles.inactiveBadge]}>
+                                    <Text style={styles.badgeText}>{promoter.is_active ? "Account Active" : "Account Disabled"}</Text>
+                                </View>
+                                <TouchableOpacity
+                                    style={[styles.toggleBtn, promoter.is_active ? styles.disableBtn : styles.enableBtn]}
+                                    onPress={togglePromoterStatus}
+                                    disabled={toggling}
+                                >
+                                    {toggling ? <ActivityIndicator size="small" color="#fff" /> :
+                                        <Text style={styles.toggleBtnText}>{promoter.is_active ? "Disable" : "Enable"}</Text>}
+                                </TouchableOpacity>
+                            </View>
+
                             <View style={styles.adminAvatar}>
                                 <MaterialIcons name="person" size={40} color="#1976d2" />
                             </View>
@@ -343,4 +391,43 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: "#d32f2f",
     },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: 10,
+    },
+    badge: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+    },
+    activeBadge: {
+        backgroundColor: "#e8f5e9",
+    },
+    inactiveBadge: {
+        backgroundColor: "#ffebee",
+    },
+    badgeText: {
+        fontSize: 12,
+        fontWeight: "bold",
+        color: "#333",
+    },
+    toggleBtn: {
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    disableBtn: {
+        backgroundColor: "#d32f2f",
+    },
+    enableBtn: {
+        backgroundColor: "#2e7d32",
+    },
+    toggleBtnText: {
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: 12,
+    }
 });

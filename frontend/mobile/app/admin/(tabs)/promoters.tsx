@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import api from "../../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from 'react-native';
@@ -50,9 +50,11 @@ export default function Promoters() {
         }
     };
 
-    useEffect(() => {
-        fetchPromoters();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchPromoters();
+        }, [])
+    );
 
     const handleRefresh = () => {
         setRefreshing(true);
