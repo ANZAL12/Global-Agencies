@@ -37,7 +37,7 @@ export default function Layout() {
 
                 {/* Mobile Header matching `headerShown: true` from expo-router */}
                 <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
-                    <h2 className="text-[18px] font-semibold text-[#1a1a1a]">Global Agencies</h2>
+                    <img src="/logo.png" alt="Global Agencies Logo" className="h-10 object-contain" />
                     <button onClick={onLogout} className="p-2">
                         <LogOut size={24} color="#f00" />
                     </button>

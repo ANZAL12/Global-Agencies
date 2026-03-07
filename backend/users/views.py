@@ -92,7 +92,8 @@ class CreatePromoterView(APIView):
                 full_name=full_name,
                 phone_number=phone_number,
                 gpay_number=gpay_number,
-                is_active=True
+                is_active=True,
+                must_change_password=True
             )
             user.set_password(password)
             user.save()
@@ -145,7 +146,8 @@ class PasswordLoginView(APIView):
         return Response({
             "refresh": str(refresh),
             "access": str(refresh.access_token),
-            "role": user.role
+            "role": user.role,
+            "must_change_password": user.must_change_password
         }, status=status.HTTP_200_OK)
 
 from rest_framework import generics
@@ -180,4 +182,27 @@ class AdminLogListView(generics.ListAPIView):
     serializer_class = AdminLogEntrySerializer
     permission_classes = [IsAdminUserRole]
     queryset = LogEntry.objects.all().order_by('-action_time')
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        new_password = request.data.get('new_password')
+        if not new_password or len(new_password) < 8:
+            return Response({"error": "Password must be at least 8 characters long."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = request.user
+        user.set_password(new_password)
+        user.must_change_password = False
+        user.save()
+
+        # Log action if admin or if they just reset it
+        log_admin_action(
+            user=user,
+            content_object=user,
+            action_flag=CHANGE,
+            change_message="Changed their own password."
+        )
+        
+        return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
 

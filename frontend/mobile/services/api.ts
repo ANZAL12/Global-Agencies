@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.28.84.177:8000/api';
+//export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.56.1:8000/api';
 
 console.log('Using API_BASE_URL:', API_BASE_URL);
 

@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../../../context/AuthContext";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, Image, View } from "react-native";
 
 export default function AdminTabLayout() {
     const { logout } = useAuth();
@@ -9,6 +9,16 @@ export default function AdminTabLayout() {
     return (
         <Tabs
             screenOptions={{
+                tabBarHideOnKeyboard: true,
+                headerLeft: () => (
+                    <View style={{ marginLeft: 30, marginTop: 20, justifyContent: 'center', height: '100%', width: 100 }}>
+                        <Image
+                            source={require('../../../assets/images/logo.png')}
+                            style={{ width: '100%', height: '100%', resizeMode: 'contain', transform: [{ scale: 2.1 }] }}
+                        />
+                    </View>
+                ),
+                headerTitle: "",
                 headerRight: () => (
                     <TouchableOpacity onPress={logout} style={{ marginRight: 15 }}>
                         <MaterialIcons name="logout" size={24} color="#f00" />

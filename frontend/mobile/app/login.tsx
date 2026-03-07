@@ -63,7 +63,7 @@ export default function Login() {
                 password: password.trim(),
             });
 
-            await login(res.data.access, res.data.refresh, res.data.role);
+            await login(res.data.access, res.data.refresh, res.data.role, res.data.must_change_password);
         } catch (error: any) {
             const msg = error.response?.data?.error || "Invalid email or password.";
             Alert.alert("Login Failed", msg);

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Keyboard } from "react-native";
 import api from "../../../services/api";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -12,7 +12,28 @@ export default function AddPromoter() {
     const [gPayNumber, setGPayNumber] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow',
+            () => {
+                setKeyboardVisible(true);
+            }
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+            Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide',
+            () => {
+                setKeyboardVisible(false);
+            }
+        );
+
+        return () => {
+            keyboardDidHideListener.remove();
+            keyboardDidShowListener.remove();
+        };
+    }, []);
 
     const handleCreatePromoter = async () => {
         if (!email.trim() || !shopName.trim() || !fullName.trim() || !phoneNumber.trim() || !password.trim()) {
@@ -67,10 +88,17 @@ export default function AddPromoter() {
 
     return (
         <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={styles.container}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
         >
-            <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+            <ScrollView
+                contentContainerStyle={[
+                    styles.scrollContainer,
+                    { paddingBottom: keyboardVisible && Platform.OS === "android" ? 220 : 20 }
+                ]}
+                keyboardShouldPersistTaps="handled"
+            >
                 <Text style={styles.title}>Add New Promoter</Text>
 
                 <View style={styles.formGroup}>

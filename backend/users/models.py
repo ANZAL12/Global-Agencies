@@ -30,6 +30,7 @@ class User(AbstractUser):
     username = None  # remove username
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='promoter')
+    must_change_password = models.BooleanField(default=False)
     google_id = models.CharField(max_length=255, null=True, blank=True)
     expo_push_token = models.CharField(max_length=255, null=True, blank=True)
     shop_name = models.CharField(max_length=255, null=True, blank=True)
