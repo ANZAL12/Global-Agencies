@@ -64,23 +64,36 @@ export default function UploadSale() {
             let bill_image_url = "";
 
             if (imageUri) {
-                const fileName = `bill_${Date.now()}.jpg`;
-                const response = await fetch(imageUri);
-                const blob = await response.blob();
- 
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('sales_bills')
-                    .upload(fileName, blob, {
-                        contentType: 'image/jpeg'
-                    });
- 
-                if (uploadError) throw uploadError;
- 
-                const { data: { publicUrl } } = supabase.storage
-                    .from('sales_bills')
-                    .getPublicUrl(fileName);
+                // Upload to Cloudinary using React Native FormData's special file object
+                const formData = new FormData();
+                
+                // Get filename from URI
+                const filename = imageUri.split('/').pop() || 'upload.jpg';
+                
+                // Infer type from filename extension
+                const match = /\.(\w+)$/.exec(filename);
+                const type = match ? `image/${match[1]}` : `image/jpeg`;
 
-                bill_image_url = publicUrl;
+                formData.append('file', {
+                    uri: imageUri,
+                    name: filename,
+                    type: type,
+                } as any);
+                
+                formData.append('upload_preset', process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default');
+                formData.append('cloud_name', process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dy8s5kclm');
+
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dy8s5kclm'}/image/upload`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const uploadData = await response.json();
+                if (uploadData.error) {
+                    throw new Error(uploadData.error.message);
+                }
+
+                bill_image_url = uploadData.secure_url;
             }
 
             const { error: dbError } = await supabase

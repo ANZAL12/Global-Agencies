@@ -61,26 +61,21 @@ export default function PromoterUploadSale() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
-            // Upload image to Supabase Storage
-            const fileExt = imageFile.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `${fileName}`;
-            
-            let uploadedImageUrl = null;
+            // Upload to Cloudinary
+            const formData = new FormData();
+            formData.append('file', imageFile);
+            formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'ml_default');
+            formData.append('cloud_name', import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dy8s5kclm');
 
-            const { error: uploadError } = await supabase.storage
-                .from('sales_bills')
-                .upload(filePath, imageFile);
-            
-            if (uploadError) {
-                console.error('Image upload failed', uploadError);
-                throw new Error("Image upload failed. Is the storage bucket created?");
-            } else {
-                const { data: publicUrlData } = supabase.storage
-                    .from('sales_bills')
-                    .getPublicUrl(filePath);
-                uploadedImageUrl = publicUrlData.publicUrl;
-            }
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dy8s5kclm'}/image/upload`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            const uploadData = await response.json();
+            if (uploadData.error) throw new Error(uploadData.error.message);
+
+            uploadedImageUrl = uploadData.secure_url;
 
             // Insert into Database
             const { error: insertError } = await supabase.from('sales').insert([{

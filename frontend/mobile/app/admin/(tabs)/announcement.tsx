@@ -183,23 +183,32 @@ export default function AdminAnnouncements() {
         try {
             let uploadedImageUrl = null;
 
-            if (imageUri && imageUri.startsWith('file://')) {
-                // Upload to supabase
-                const fileExt = imageUri.split('.').pop() || 'jpg';
-                const fileName = `${Math.random()}.${fileExt}`;
+            if (imageUri) {
+                // Upload to Cloudinary using React Native FormData's special file object
+                const formData = new FormData();
                 
-                // Fetch the file to convert it to a Blob for React Native Supabase upload
-                const res = await fetch(imageUri);
-                const blob = await res.blob();
-                
-                const { error: uploadError } = await supabase.storage
-                    .from('announcements')
-                    .upload(fileName, blob, { contentType: `image/${fileExt}` });
+                const filename = imageUri.split('/').pop() || 'upload.jpg';
+                const match = /\.(\w+)$/.exec(filename);
+                const type = match ? `image/${match[1]}` : `image/jpeg`;
 
-                if (uploadError) throw new Error("Failed to upload image.");
+                formData.append('file', {
+                    uri: imageUri,
+                    name: filename,
+                    type: type,
+                } as any);
 
-                const { data } = supabase.storage.from('announcements').getPublicUrl(fileName);
-                uploadedImageUrl = data.publicUrl;
+                formData.append('upload_preset', process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default');
+                formData.append('cloud_name', process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dy8s5kclm');
+
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dy8s5kclm'}/image/upload`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const uploadData = await response.json();
+                if (uploadData.error) throw new Error(uploadData.error.message);
+
+                uploadedImageUrl = uploadData.secure_url;
             }
 
             let savedAnnouncementId = editingId;
