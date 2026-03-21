@@ -54,28 +54,21 @@ export default function AddPromoter() {
 
         setLoading(true);
         try {
-            // Note: In an Expo app, this logs out the current user by default if using standard client.
-            // Ideally an edge function is used, but for migration purposes we mimic the web behavior.
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: email.trim().toLowerCase(),
-                password: password.trim(),
+            // Call the custom RPC to bypass email rate limits
+            const { data: rpcData, error: rpcError } = await supabase.rpc('admin_create_promoter', {
+                p_email: email.trim().toLowerCase(),
+                p_password: password.trim(),
+                p_full_name: fullName.trim(),
+                p_shop_name: shopName.trim(),
+                p_phone_number: phoneNumber.trim(),
+                p_gpay_number: gPayNumber.trim()
             });
 
-            if (authError) throw authError;
+            if (rpcError) throw rpcError;
 
-            if (authData.user) {
-                const { error: dbError } = await supabase.from('users').insert([{
-                    id: authData.user.id,
-                    email: email.trim().toLowerCase(),
-                    role: 'promoter',
-                    full_name: fullName.trim(),
-                    shop_name: shopName.trim(),
-                    phone_number: phoneNumber.trim(),
-                    gpay_number: gPayNumber.trim(),
-                    is_active: true
-                }]);
-
-                if (dbError) throw dbError;
+            // The RPC returns a JSON object. We check if there's an error in it.
+            if (rpcData && rpcData.error) {
+                throw new Error(rpcData.error);
             }
 
             Alert.alert("Success", "Promoter account created successfully!");

@@ -47,31 +47,24 @@ export function AddPromoter() {
     }
 
     try {
-      // 1. Sign up the user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password: password.trim(),
+      // 1. Call the custom RPC to bypass email rate limits
+      const { data: rpcData, error: rpcError } = await supabase.rpc('admin_create_promoter', {
+        p_email: email.trim().toLowerCase(),
+        p_password: password.trim(),
+        p_full_name: fullName.trim(),
+        p_shop_name: shopName.trim(),
+        p_phone_number: phoneNumber.trim(),
+        p_gpay_number: gPayNumber.trim()
       });
 
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // 2. Insert the user details into the public.users table
-        const { error: dbError } = await supabase.from('users').insert([{
-          id: authData.user.id,
-          email: email.trim(),
-          role: 'promoter',
-          full_name: fullName.trim(),
-          shop_name: shopName.trim(),
-          phone_number: phoneNumber.trim(),
-          gpay_number: gPayNumber.trim(),
-          is_active: true
-        }]);
-
-        if (dbError) throw dbError;
-
-        await logActivity('Register Promoter', `Created account for ${fullName} (${email}) at ${shopName}`);
+      if (rpcError) throw rpcError;
+      
+      // The RPC returns a JSON object. We check if there's an error in it.
+      if (rpcData && rpcData.error) {
+        throw new Error(rpcData.error);
       }
+
+      await logActivity('Register Promoter', `Created account for ${fullName} (${email}) at ${shopName}`);
 
       setSuccess(true);
       setTimeout(() => navigate('/promoters'), 2000);

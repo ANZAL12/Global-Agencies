@@ -53,7 +53,7 @@ export default function AdminTabLayout() {
                 name="add-promoter"
                 options={{
                     title: "Add Promoter",
-                    tabBarIcon: ({ color }) => <MaterialIcons name="person-add" size={24} color={color} />,
+                    href: null,
                 }}
             />
             <Tabs.Screen

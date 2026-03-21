@@ -311,7 +311,7 @@ export default function AdminAnnouncements() {
             />
 
             <TouchableOpacity style={styles.fab} onPress={handleCreateNew}>
-                <MaterialIcons name="add" size={28} color="#fff" />
+                <MaterialIcons name="add" size={24} color="#fff" />
             </TouchableOpacity>
 
             <Modal visible={isModalVisible} animationType="slide" presentationStyle="pageSheet">
@@ -483,14 +483,14 @@ const styles = StyleSheet.create({
     },
     fab: {
         position: 'absolute',
-        width: 56,
-        height: 56,
+        width: 50,
+        height: 50,
         alignItems: 'center',
         justifyContent: 'center',
         right: 20,
         bottom: 20,
         backgroundColor: '#1976d2',
-        borderRadius: 28,
+        borderRadius: 25,
         elevation: 5,
         shadowColor: '#000',
         shadowOpacity: 0.3,

@@ -139,6 +139,14 @@ export default function Promoters() {
                     </View>
                 }
             />
+
+            <TouchableOpacity 
+                style={styles.fab}
+                onPress={() => router.push('/admin/add-promoter' as any)}
+                activeOpacity={0.8}
+            >
+                <MaterialIcons name="add" size={24} color="#fff" />
+            </TouchableOpacity>
         </View>
     );
 }
@@ -253,5 +261,21 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: "#999",
         marginTop: 10,
+    },
+    fab: {
+        position: 'absolute',
+        width: 50,
+        height: 50,
+        alignItems: 'center',
+        justifyContent: 'center',
+        right: 20,
+        bottom: 20,
+        backgroundColor: '#1976d2',
+        borderRadius: 25,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
     },
 });

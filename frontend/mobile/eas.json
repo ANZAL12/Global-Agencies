@@ -15,7 +15,17 @@
         },
         "production": {
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://api.yourdomain.com/api"
+                "EXPO_PUBLIC_API_URL": "https://global-agencies-backend.onrender.com/api",
+                "EXPO_PUBLIC_SUPABASE_URL": "https://cqodtpuuhhfvcuceshfs.supabase.co",
+                "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxb2R0cHV1aGhmdmN1Y2VzaGZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODk1NTQsImV4cCI6MjA4OTE2NTU1NH0.8B3q65aF1GXI7RO6AcIx9XHQJMr_yaHa8Rmmoa7b8oQ",
+                "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dy8s5kclm",
+                "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "ml_default"
+            }
+        },
+        "apk": {
+            "extends": "production",
+            "android": {
+                "buildType": "apk"
             }
         }
     },
