@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "799807300420",
+    "project_id": "globalagencies-ee531",
+    "storage_bucket": "globalagencies-ee531.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:799807300420:android:ea843f42e83968c68aad11",
+        "android_client_info": {
+          "package_name": "com.globalagencies.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuJFPb11vz17mXl-2yhbzuckhnDG_37GY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
