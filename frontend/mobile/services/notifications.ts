@@ -89,20 +89,36 @@ export async function registerForPushNotificationsAsync() {
 
 export const syncPushTokenToBackend = async () => {
     try {
+        console.log('Push Sync: Checking authentication...');
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        
+        if (!user) {
+            console.log('Push Sync: No authenticated user found. Skipping.');
+            return;
+        }
 
+        console.log(`Push Sync: User found (${user.email}). Requesting token...`);
         const token = await registerForPushNotificationsAsync();
+        
         if (token) {
-            const { error } = await supabase
+            console.log('Push Sync: Token generated successfully:', token);
+            console.log('Push Sync: Updating Supabase users table...');
+            
+            const { data, error } = await supabase
                 .from('users')
                 .update({ expo_push_token: token })
-                .eq('id', user.id);
+                .eq('id', user.id)
+                .select();
 
-            if (error) throw error;
-            console.log('Push token synced to Supabase successfully');
+            if (error) {
+                console.error('Push Sync: Supabase Update Error:', error.message);
+            } else {
+                console.log('Push Sync: SUCCESS! Token saved to Supabase.', data);
+            }
+        } else {
+            console.warn('Push Sync: Failed to generate a token. Are you on a physical device?');
         }
-    } catch (error) {
-        console.log('Error syncing push token:', error);
+    } catch (error: any) {
+        console.error('Push Sync: Critical Error:', error.message || error);
     }
 };

@@ -139,60 +139,6 @@ export function Announcements() {
     }
   };
 
-  const sendPushNotifications = async (title: string, body: string) => {
-    try {
-      console.log('Push: Fetching tokens for promoters...');
-      const { data: targetUsers, error } = await supabase
-        .from('users')
-        .select('expo_push_token')
-        .eq('role', 'promoter')
-        .not('expo_push_token', 'is', null);
-
-      if (error) {
-        console.error('Push: Database error:', error);
-        return;
-      }
-      
-      console.log(`Push: Found ${targetUsers?.length || 0} potential users.`);
-
-      const tokens = targetUsers
-        ?.map(u => u.expo_push_token)
-        .filter(t => t && t.startsWith('ExponentPushToken'));
-
-      if (!tokens || tokens.length === 0) {
-        console.warn('Push: No valid ExponentPushTokens found. Make sure promoters have opened the new app.');
-        return;
-      }
-
-      console.log(`Push: Sending to ${tokens.length} valid tokens...`);
-
-      const messages = tokens.map(token => ({
-        to: token,
-        sound: 'default',
-        title: title,
-        body: body,
-        priority: 'high',
-        channelId: 'default',
-        data: { type: 'announcement' },
-      }));
-
-      const response = await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Accept-Encoding': 'gzip, deflate',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(messages),
-      });
-
-      const result = await response.json();
-      console.log('Push: Expo API response:', result);
-    } catch (err) {
-      console.error('Push: Critical error:', err);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description) return;
@@ -219,21 +165,36 @@ export function Announcements() {
         if (error) throw error;
         await logActivity('Update Announcement', `Updated announcement: "${title}"`);
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('announcements')
           .insert([payload])
-          .select();
+          .select()
+          .single();
         if (error) throw error;
+        
         await logActivity('Create Announcement', `Posted new announcement: "${title}"`);
+
+        // Assign to selected promoters or all promoters (Ensure unique IDs)
+        const targetIds = Array.from(new Set(
+          selectedPromoters.length > 0 
+            ? selectedPromoters 
+            : promoters.map(p => p.id)
+        ));
+
+        if (targetIds.length > 0) {
+          const targets = targetIds.map(userId => ({
+            announcement_id: data.id,
+            user_id: userId
+          }));
+          
+          // Use upsert to avoid 409 Conflict if retried
+          await supabase.from('announcement_targets').upsert(targets, { onConflict: 'announcement_id,user_id' });
+        }
       }
 
       setIsModalOpen(false);
       resetForm();
       fetchAnnouncements();
-
-      if (!editingId) {
-        sendPushNotifications(title, description.substring(0, 100) + (description.length > 100 ? '...' : ''));
-      }
 
       showAlert({
         title: editingId ? 'Announcement Updated' : 'Announcement Posted',
