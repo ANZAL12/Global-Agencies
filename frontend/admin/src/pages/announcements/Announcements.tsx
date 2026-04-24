@@ -157,6 +157,8 @@ export function Announcements() {
         image_url: finalImageUrl || null,
       };
 
+      let announcementId = editingId;
+
       if (editingId) {
         const { error } = await supabase
           .from('announcements')
@@ -171,25 +173,29 @@ export function Announcements() {
           .select()
           .single();
         if (error) throw error;
-        
+        announcementId = data.id;
         await logActivity('Create Announcement', `Posted new announcement: "${title}"`);
+      }
 
-        // Assign to selected promoters or all promoters (Ensure unique IDs)
-        const targetIds = Array.from(new Set(
-          selectedPromoters.length > 0 
-            ? selectedPromoters 
-            : promoters.map(p => p.id)
-        ));
+      // Assign to selected promoters or all promoters (Strict Targeting)
+      const targetIds = Array.from(new Set(
+        selectedPromoters.length > 0 
+          ? selectedPromoters 
+          : promoters.map(p => p.id)
+      ));
 
-        if (targetIds.length > 0) {
-          const targets = targetIds.map(userId => ({
-            announcement_id: data.id,
-            user_id: userId
-          }));
-          
-          // Use upsert to avoid 409 Conflict if retried
-          await supabase.from('announcement_targets').upsert(targets, { onConflict: 'announcement_id,user_id' });
+      if (targetIds.length > 0) {
+        // If editing, clear old targets first to re-sync
+        if (editingId) {
+          await supabase.from('announcement_targets').delete().eq('announcement_id', announcementId);
         }
+
+        const targets = targetIds.map(userId => ({
+          announcement_id: announcementId,
+          user_id: userId
+        }));
+        
+        await supabase.from('announcement_targets').insert(targets);
       }
 
       setIsModalOpen(false);

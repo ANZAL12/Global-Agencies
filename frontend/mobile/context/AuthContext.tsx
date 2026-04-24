@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { supabase } from '../services/supabase';
 
 const safeStorage = {
     getItem: async (key: string) => {
@@ -104,6 +105,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const logout = async () => {
         try {
+            // Clear push token from database first
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                await supabase
+                    .from('users')
+                    .update({ expo_push_token: null })
+                    .eq('id', user.id);
+            }
+
+            await supabase.auth.signOut();
             await safeStorage.removeItem('access');
             await safeStorage.removeItem('refresh');
             await safeStorage.removeItem('role');

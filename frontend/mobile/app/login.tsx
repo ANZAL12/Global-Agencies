@@ -20,7 +20,10 @@ export default function Login() {
     const redirectUri = AuthSession.makeRedirectUri();
 
     const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-        clientId: "612035335688-guimkribnu2kdunbv3ivrql507n7qb6s.apps.googleusercontent.com",
+        // For Expo Go / Web
+        webClientId: "612035335688-guimkribnu2kdunbv3ivrql507n7qb6s.apps.googleusercontent.com",
+        // For Standalone APK (Paste the Android Client ID from Google Console here)
+        androidClientId: "612035335688-8rghibmklm12mnqjh21b6eon1tqot6oh.apps.googleusercontent.com",
     });
 
     useEffect(() => {
@@ -113,6 +116,7 @@ export default function Login() {
                     <TextInput
                         style={styles.input}
                         placeholder="email@example.com"
+                        placeholderTextColor="#999"
                         value={email}
                         onChangeText={setEmail}
                         autoCapitalize="none"
@@ -125,6 +129,7 @@ export default function Login() {
                     <TextInput
                         style={styles.input}
                         placeholder="********"
+                        placeholderTextColor="#999"
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry
@@ -207,6 +212,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 15,
         fontSize: 16,
+        color: "#000",
     },
     loginButton: {
         backgroundColor: "#1976d2",
