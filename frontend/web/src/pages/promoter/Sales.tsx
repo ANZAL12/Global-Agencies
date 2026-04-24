@@ -12,6 +12,8 @@ type Sale = {
     incentive_amount: string | null;
     payment_status: string;
     created_at: string;
+    paid_by_email?: string | null;
+    approved_by_email?: string | null;
 };
 
 export default function PromoterSales() {
@@ -25,7 +27,7 @@ export default function PromoterSales() {
 
             const { data, error } = await supabase
                 .from('sales')
-                .select('*')
+                .select('id, product_name, model_no, serial_no, bill_no, bill_amount, status, incentive_amount, payment_status, created_at, approved_by_email, paid_by_email')
                 .eq('promoter_id', user.id)
                 .order('created_at', { ascending: false });
                 
@@ -84,6 +86,11 @@ export default function PromoterSales() {
                                     <p className="text-[14px] font-bold uppercase transition-colors" style={{ color: getStatusColor(item.status) }}>
                                         {item.status}
                                     </p>
+                                    {item.approved_by_email && (
+                                        <p className="text-[10px] text-[#1976d2] mt-[2px] italic">
+                                            By: {item.approved_by_email}
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[12px] text-[#666] mb-[2px]">Incentive</p>
@@ -97,9 +104,16 @@ export default function PromoterSales() {
                                 <p className="text-[12px] text-[#888]">
                                     {new Date(item.created_at).toLocaleDateString()}
                                 </p>
-                                <p className="text-[12px] text-[#555]">
-                                    Payment: <span className="font-bold capitalize">{item.payment_status}</span>
-                                </p>
+                                <div className="text-right">
+                                    <p className="text-[12px] text-[#555]">
+                                        Payment: <span className="font-bold capitalize">{item.payment_status}</span>
+                                    </p>
+                                    {item.paid_by_email && (
+                                        <p className="text-[10px] text-[#1976d2] mt-[2px] italic">
+                                            By: {item.paid_by_email}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}

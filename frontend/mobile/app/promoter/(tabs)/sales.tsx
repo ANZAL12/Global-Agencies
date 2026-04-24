@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl } from "react-native";
 import { supabase } from "../../../services/supabase";
 import { useFocusEffect } from "expo-router";
@@ -15,6 +15,8 @@ type Sale = {
     payment_status: string;
     created_at: string;
     transaction_id?: string | null;
+    approved_by_email?: string | null;
+    paid_by_email?: string | null;
 };
 
 export default function MySales() {
@@ -29,7 +31,7 @@ export default function MySales() {
 
             const { data, error } = await supabase
                 .from('sales')
-                .select('*')
+                .select('id, product_name, model_no, serial_no, bill_no, bill_amount, status, incentive_amount, payment_status, created_at, transaction_id, approved_by_email, paid_by_email')
                 .eq('promoter_id', user.id)
                 .order('created_at', { ascending: false });
 
@@ -43,7 +45,6 @@ export default function MySales() {
         }
     };
 
-    // Ensure sales update when tab is focused
     useFocusEffect(
         useCallback(() => {
             fetchSales();
@@ -100,6 +101,9 @@ export default function MySales() {
                                 <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
                                     {item.status.toUpperCase()}
                                 </Text>
+                                {item.approved_by_email ? (
+                                    <Text style={styles.adminEmail}>By: {item.approved_by_email}</Text>
+                                ) : null}
                             </View>
                             <View style={{ alignItems: "flex-end" }}>
                                 <Text style={styles.label}>Incentive</Text>
@@ -117,11 +121,12 @@ export default function MySales() {
                                 <Text style={styles.paymentStatus}>
                                     Payment: <Text style={{ fontWeight: "bold" }}>{item.payment_status}</Text>
                                 </Text>
-                                {item.transaction_id && (
-                                    <Text style={styles.txnText}>
-                                        Txn ID: {item.transaction_id}
-                                    </Text>
-                                )}
+                                {item.paid_by_email ? (
+                                    <Text style={styles.adminEmail}>By: {item.paid_by_email}</Text>
+                                ) : null}
+                                {item.transaction_id ? (
+                                    <Text style={styles.txnText}>Txn ID: {item.transaction_id}</Text>
+                                ) : null}
                             </View>
                         </View>
                     </View>
@@ -213,6 +218,12 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: "#1976d2",
         fontWeight: "bold",
+        marginTop: 2,
+    },
+    adminEmail: {
+        fontSize: 10,
+        color: "#1976d2",
+        fontStyle: "italic",
         marginTop: 2,
     },
     emptyContainer: {

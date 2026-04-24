@@ -36,8 +36,8 @@ export default function AddPromoter() {
     }, []);
 
     const handleCreatePromoter = async () => {
-        if (!email.trim() || !shopName.trim() || !fullName.trim() || !phoneNumber.trim() || !password.trim()) {
-            Alert.alert("Error", "Please fill in all mandatory fields (Email, Password, Shop Name, Full Name, and Phone Number).");
+        if (!email.trim() || !shopName.trim() || !fullName.trim() || !phoneNumber.trim() || !password.trim() || !gPayNumber.trim() || !upiId.trim()) {
+            Alert.alert("Error", "Please fill in all fields, including GPay Number and UPI ID.");
             return;
         }
 
@@ -61,7 +61,8 @@ export default function AddPromoter() {
                 p_full_name: fullName.trim(),
                 p_shop_name: shopName.trim(),
                 p_phone_number: phoneNumber.trim(),
-                p_gpay_number: gPayNumber.trim()
+                p_gpay_number: gPayNumber.trim(),
+                p_upi_id: upiId.trim()
             });
 
             if (rpcError) throw rpcError;
@@ -77,6 +78,7 @@ export default function AddPromoter() {
             setFullName("");
             setPhoneNumber("");
             setGPayNumber("");
+            setUpiId("");
             setPassword("");
 
             // Redirect back to dashboard
@@ -160,13 +162,24 @@ export default function AddPromoter() {
                 </View>
 
                 <View style={styles.formGroup}>
-                    <Text style={styles.label}>GPay Number</Text>
+                    <Text style={styles.label}>GPay Number *</Text>
                     <TextInput
                         style={styles.input}
                         placeholder="+91 9876543210"
                         value={gPayNumber}
                         onChangeText={setGPayNumber}
                         keyboardType="phone-pad"
+                    />
+                </View>
+
+                <View style={styles.formGroup}>
+                    <Text style={styles.label}>UPI ID *</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="username@upi"
+                        value={upiId}
+                        onChangeText={setUpiId}
+                        autoCapitalize="none"
                     />
                 </View>
 

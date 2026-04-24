@@ -22,6 +22,7 @@ export function AddPromoter() {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [gPayNumber, setGPayNumber] = useState('');
+  const [upiId, setUpiId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -34,7 +35,7 @@ export function AddPromoter() {
     setError(null);
 
     // Validation
-    if (!email.trim() || !password.trim() || !shopName.trim() || !fullName.trim() || !phoneNumber.trim()) {
+    if (!email.trim() || !password.trim() || !shopName.trim() || !fullName.trim() || !phoneNumber.trim() || !gPayNumber.trim() || !upiId.trim()) {
       setError('Please fill in all required fields marked with *');
       setLoading(false);
       return;
@@ -54,7 +55,8 @@ export function AddPromoter() {
         p_full_name: fullName.trim(),
         p_shop_name: shopName.trim(),
         p_phone_number: phoneNumber.trim(),
-        p_gpay_number: gPayNumber.trim()
+        p_gpay_number: gPayNumber.trim(),
+        p_upi_id: upiId.trim()
       });
 
       if (rpcError) throw rpcError;
@@ -188,7 +190,7 @@ export function AddPromoter() {
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-gray-700 flex items-center">
                   <CreditCard className="h-4 w-4 mr-2 text-gray-400" />
-                  GPay Number (Optional)
+                  GPay Number *
                 </label>
                 <input
                   type="tel"
@@ -196,6 +198,20 @@ export function AddPromoter() {
                   placeholder="+91 88888 88888"
                   value={gPayNumber}
                   onChange={(e) => setGPayNumber(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-gray-700 flex items-center">
+                  <CreditCard className="h-4 w-4 mr-2 text-gray-400" />
+                  UPI ID *
+                </label>
+                <input
+                  type="text"
+                  className="block w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                  placeholder="username@upi"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
                 />
               </div>
             </div>

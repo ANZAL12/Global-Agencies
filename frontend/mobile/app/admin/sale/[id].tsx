@@ -6,6 +6,7 @@ import { supabase } from "../../../services/supabase";
 
 type SaleDetail = {
     id: string;
+    promoter_name: string;
     promoter_email: string;
     product_name: string;
     model_no: string | null;
@@ -20,6 +21,7 @@ type SaleDetail = {
     transaction_id: string | null;
     promoter_phone: string | null;
     promoter_gpay: string | null;
+    promoter_upi: string | null;
 };
 
 export default function SaleDetailScreen() {
@@ -37,28 +39,36 @@ export default function SaleDetailScreen() {
     }, [id]);
 
     const fetchSaleDetails = async () => {
+        setLoading(true);
         try {
             const { data, error } = await supabase
                 .from('sales')
                 .select(`
                     *,
-                    promoter:users!sales_promoter_id_fkey (
+                    promoter:users!promoter_id (
+                        full_name,
                         email,
                         phone_number,
-                        gpay_number
+                        gpay_number,
+                        upi_id
                     )
                 `)
                 .eq('id', id)
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error("Supabase Error:", error);
+                throw error;
+            }
 
             if (data) {
                 const mappedSale: SaleDetail = {
                     ...data,
+                    promoter_name: data.promoter?.full_name || 'Promoter',
                     promoter_email: data.promoter?.email || 'Unknown',
                     promoter_phone: data.promoter?.phone_number || 'N/A',
                     promoter_gpay: data.promoter?.gpay_number || 'N/A',
+                    promoter_upi: data.promoter?.upi_id || null,
                     bill_image: data.bill_image_url
                 };
                 setSale(mappedSale);
@@ -68,8 +78,9 @@ export default function SaleDetailScreen() {
                 Alert.alert("Error", "Sale not found.");
                 router.back();
             }
-        } catch (error) {
-            console.error("Failed to fetch sale", error);
+        } catch (error: any) {
+            console.error("Failed to fetch sale:", error);
+            Alert.alert("Error", "Could not load sale details. Please check your internet or database.");
         } finally {
             setLoading(false);
         }
@@ -83,13 +94,22 @@ export default function SaleDetailScreen() {
 
         setIsProcessing(true);
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+            // Fetch the admin's own email from users table
+            const { data: adminData } = await supabase
+                .from('users')
+                .select('email')
+                .eq('id', user!.id)
+                .single();
             const { error } = await supabase
                 .from('sales')
                 .update({ 
                     status: "approved", 
                     incentive_amount: parseFloat(incentiveInput), 
                     transaction_id: transactionIdInput,
-                    approved_at: new Date().toISOString() 
+                    approved_at: new Date().toISOString(),
+                    approved_by: user?.id,
+                    approved_by_email: adminData?.email || user?.email
                 })
                 .eq('id', id);
 
@@ -137,12 +157,21 @@ export default function SaleDetailScreen() {
     const handleMarkPaid = async () => {
         setIsProcessing(true);
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+            // Fetch the admin's own email from users table
+            const { data: adminData } = await supabase
+                .from('users')
+                .select('email')
+                .eq('id', user!.id)
+                .single();
             const { error } = await supabase
                 .from('sales')
                 .update({ 
                     payment_status: "paid", 
                     transaction_id: transactionIdInput || sale?.transaction_id,
-                    paid_at: new Date().toISOString() 
+                    paid_at: new Date().toISOString(),
+                    paid_by: user?.id,
+                    paid_by_email: adminData?.email || user?.email
                 })
                 .eq('id', id);
 
@@ -295,6 +324,38 @@ export default function SaleDetailScreen() {
                     <View style={styles.actionsContainer}>
                         <Text style={styles.label}>Incentive Assigned</Text>
                         <Text style={styles.value}>{sale.incentive_amount ? `₹${sale.incentive_amount}` : "None"}</Text>
+                    </View>
+                )}
+
+                {!isProcessing && (sale.status === "approved" || (sale.status === "pending" && incentiveInput)) && sale.payment_status !== "paid" && (
+                    <View style={styles.upiContainer}>
+                        <Text style={[styles.label, { color: '#1976d2' }]}>Scan to Pay (UPI)</Text>
+                        {(sale.promoter_upi || sale.promoter_phone) ? (
+                            <View style={styles.qrWrapper}>
+                                <View style={styles.qrCard}>
+                                    {(() => {
+                                        const upiAddr = sale.promoter_upi ? sale.promoter_upi : `${sale.promoter_phone}@okbizaxis`;
+                                        const amt = parseFloat(incentiveInput || sale.incentive_amount || '0').toFixed(2);
+                                        const payeeName = (sale.promoter_name || 'Promoter').substring(0, 20);
+                                        const upiUrl = `upi://pay?pa=${upiAddr}&pn=${encodeURIComponent(payeeName)}&am=${amt}&cu=INR`;
+                                        
+                                        return (
+                                            <Image 
+                                                source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}` }}
+                                                style={styles.qrImage}
+                                            />
+                                        );
+                                    })()}
+                                </View>
+                                <Text style={styles.upiText}>{sale.promoter_upi || `${sale.promoter_phone}@okbizaxis`}</Text>
+                                <Text style={styles.amountText}>Amount: ₹{parseFloat(incentiveInput || sale.incentive_amount || '0').toFixed(2)}</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.upiEmpty}>
+                                <MaterialIcons name="error-outline" size={24} color="#f57c00" />
+                                <Text style={styles.upiEmptyText}>Payment Details Missing</Text>
+                            </View>
+                        )}
                     </View>
                 )}
 
@@ -453,5 +514,51 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: '#2e7d32',
+    },
+    upiContainer: {
+        marginTop: 20,
+        backgroundColor: '#f0f7ff',
+        padding: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#d0e3ff',
+    },
+    qrWrapper: {
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    qrCard: {
+        backgroundColor: '#fff',
+        padding: 15,
+        borderRadius: 16,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    qrImage: {
+        width: 200,
+        height: 200,
+    },
+    upiText: {
+        marginTop: 10,
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#1976d2',
+    },
+    amountText: {
+        fontSize: 12,
+        color: '#666',
+        marginTop: 2,
+    },
+    upiEmpty: {
+        alignItems: 'center',
+        padding: 15,
+    },
+    upiEmptyText: {
+        marginTop: 5,
+        fontSize: 12,
+        color: '#f57c00',
+        fontWeight: 'bold',
     },
 });

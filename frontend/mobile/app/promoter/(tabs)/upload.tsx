@@ -134,14 +134,21 @@ export default function UploadSale() {
                 throw dbError;
             }
 
-            Alert.alert("Success", "Sale uploaded successfully!");
-            setProductName("");
-            setModelNo("");
-            setSerialNo("");
-            setBillNo("");
-            setBillAmount("");
-            setImageUri(null);
-            router.replace("/promoter");
+            Alert.alert("Success", "Sale uploaded successfully!", [
+                {
+                    text: "OK",
+                    onPress: () => {
+                        setProductName("");
+                        setModelNo("");
+                        setSerialNo("");
+                        setBillNo("");
+                        setBillAmount("");
+                        setImageUri(null);
+                        setIsSubmitting(false);
+                        router.replace("/promoter/(tabs)/sales");
+                    }
+                }
+            ]);
         } catch (error: any) {
             console.log("Upload failed", error);
 

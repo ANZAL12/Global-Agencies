@@ -37,27 +37,36 @@ export function SaleDetails() {
   useEffect(() => {
     async function fetchSale() {
       if (!id) return;
+      setLoading(true);
+      setError(null);
       try {
         const { data, error } = await supabase
           .from('sales')
           .select(`
             *,
-            promoter:users!sales_promoter_id_fkey (
+            promoter:users!promoter_id (
+              full_name,
               email,
               phone_number,
-              gpay_number
+              gpay_number,
+              upi_id
             )
           `)
           .eq('id', id)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Fetch error:', error);
+          throw error;
+        }
         
         const mappedResult = {
           ...data,
+          promoter_name: data.promoter?.full_name || 'Promoter',
           promoter_email: data.promoter?.email || 'Unknown',
           promoter_phone: data.promoter?.phone_number || 'N/A',
           promoter_gpay: data.promoter?.gpay_number || 'N/A',
+          promoter_upi: data.promoter?.upi_id || null,
         };
         
         setSale(mappedResult);
@@ -82,13 +91,18 @@ export function SaleDetails() {
     setProcessing(true);
     setError(null);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: adminData } = await supabase
+        .from('users').select('email').eq('id', user!.id).single();
       const { error } = await supabase
         .from('sales')
         .update({ 
           status: 'approved', 
           incentive_amount: parseFloat(incentiveAmount),
           transaction_id: transactionId,
-          approved_at: new Date().toISOString() 
+          approved_at: new Date().toISOString(),
+          approved_by: user?.id,
+          approved_by_email: adminData?.email || user?.email
         })
         .eq('id', id);
 
@@ -142,12 +156,17 @@ export function SaleDetails() {
   const handleMarkPaid = async () => {
     setProcessing(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: adminData } = await supabase
+        .from('users').select('email').eq('id', user!.id).single();
       const { error } = await supabase
         .from('sales')
         .update({ 
           payment_status: 'paid',
           transaction_id: transactionId || sale?.transaction_id,
-          paid_at: new Date().toISOString()
+          paid_at: new Date().toISOString(),
+          paid_by: user?.id,
+          paid_by_email: adminData?.email || user?.email
         })
         .eq('id', id);
 
@@ -423,6 +442,43 @@ export function SaleDetails() {
                       <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
                          <span className="text-sm font-medium text-gray-500">Transaction ID:</span>
                          <span className="text-sm font-bold text-gray-900">{sale.transaction_id}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Show QR Code if Approved OR if Pending with an amount entered */}
+                {(sale.status === 'approved' || (sale.status === 'pending' && incentiveAmount)) && sale.payment_status !== 'paid' && (
+                  <div className="bg-indigo-50 rounded-2xl p-6 border border-indigo-100 space-y-4">
+                    <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Scan to Pay via UPI</p>
+                    
+                    {((sale as any).promoter_upi || (sale as any).promoter_phone) ? (
+                      <div className="flex flex-col items-center space-y-3">
+                        <div className="bg-white p-3 rounded-2xl shadow-sm border border-indigo-50">
+                          {(() => {
+                            const upiAddr = (sale as any).promoter_upi ? (sale as any).promoter_upi : `${(sale as any).promoter_phone}@okbizaxis`;
+                            const amt = parseFloat(incentiveAmount || sale.incentive_amount || '0').toFixed(2);
+                            const payeeName = ((sale as any).promoter_name || 'Promoter').substring(0, 20); // GPay limit
+                            const upiUrl = `upi://pay?pa=${upiAddr}&pn=${encodeURIComponent(payeeName)}&am=${amt}&cu=INR`;
+                            
+                            return (
+                              <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUrl)}`} 
+                                alt="UPI QR Code" 
+                                className="w-40 h-40"
+                              />
+                            );
+                          })()}
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-bold text-indigo-900">{(sale as any).promoter_upi || `${(sale as any).promoter_phone}@okbizaxis`}</p>
+                          <p className="text-[10px] text-indigo-500 font-medium">Amount: ₹{parseFloat(incentiveAmount || sale.incentive_amount || '0').toFixed(2)}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-xs text-amber-600 font-bold">Payment Details Missing</p>
+                        <p className="text-[10px] text-amber-500 mt-1">Please ensure promoter has a UPI ID or Phone Number</p>
                       </div>
                     )}
                   </div>
