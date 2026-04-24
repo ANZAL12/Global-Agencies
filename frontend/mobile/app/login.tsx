@@ -20,10 +20,12 @@ export default function Login() {
     const redirectUri = AuthSession.makeRedirectUri();
 
     const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-        // The Web Client ID is used as the primary clientId for many Expo flows
         clientId: "612035335688-guimkribnu2kdunbv3ivrql507n7qb6s.apps.googleusercontent.com",
         webClientId: "612035335688-guimkribnu2kdunbv3ivrql507n7qb6s.apps.googleusercontent.com",
         androidClientId: "612035335688-8rghibmklm12mnqjh21b6eon1tqot6oh.apps.googleusercontent.com",
+        iosClientId: "612035335688-9g1s2vo6chthmstrapuc7e7bdpf1u6kf.apps.googleusercontent.com",
+    }, {
+        scheme: "global-agencies",
     });
 
     useEffect(() => {

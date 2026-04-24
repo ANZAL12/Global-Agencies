@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../services/supabase";
@@ -8,6 +8,18 @@ export default function ChangePassword() {
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        console.log("🛠️ ChangePassword screen mounted");
+        const timer = setTimeout(() => {
+            Alert.alert(
+                "🔒 Security Requirement",
+                "Welcome! To keep your account safe, the temporary password assigned by the Admin must be replaced with a secret password of your choice.",
+                [{ text: "Got it!" }]
+            );
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, []);
 
     const handleSubmit = async () => {
         if (!newPassword || !confirmPassword) {
@@ -21,7 +33,7 @@ export default function ChangePassword() {
         }
 
         if (newPassword.length < 8) {
-            Alert.alert("Error", "Password must be at least 8 characters long.");
+            Alert.alert("Error", "Security Requirement: Password must be at least 8 characters long.");
             return;
         }
 
@@ -36,7 +48,7 @@ export default function ChangePassword() {
                 await supabase.from('users').update({ must_change_password: false }).eq('id', user.id);
             }
 
-            Alert.alert("Success", "Password changed successfully! You can now access your account.");
+            Alert.alert("✅ Success", "Your password has been securely updated! Welcome to the team.");
             await updateMustChangePassword(false);
         } catch (error: any) {
             const msg = error.message || "Failed to change password. Please try again.";
@@ -49,14 +61,15 @@ export default function ChangePassword() {
     return (
         <View style={styles.container}>
             <View style={styles.card}>
-                <Text style={styles.title}>Update Required</Text>
-                <Text style={styles.subtitle}>For security reasons, you must change your password before continuing.</Text>
+                <Text style={styles.title}>Update Password</Text>
+                <Text style={styles.subtitle}>Enter a new secret password to secure your account.</Text>
 
                 <View style={styles.inputContainer}>
                     <Text style={styles.label}>New Password</Text>
                     <TextInput
                         style={styles.input}
                         placeholder="Min. 8 characters"
+                        placeholderTextColor="#999"
                         value={newPassword}
                         onChangeText={setNewPassword}
                         secureTextEntry
@@ -67,7 +80,8 @@ export default function ChangePassword() {
                     <Text style={styles.label}>Confirm New Password</Text>
                     <TextInput
                         style={styles.input}
-                        placeholder="Min. 8 characters"
+                        placeholder="Repeat new password"
+                        placeholderTextColor="#999"
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                         secureTextEntry
@@ -82,7 +96,7 @@ export default function ChangePassword() {
                     {isLoading ? (
                         <ActivityIndicator color="#fff" />
                     ) : (
-                        <Text style={styles.buttonText}>Change Password</Text>
+                        <Text style={styles.buttonText}>Secure My Account</Text>
                     )}
                 </TouchableOpacity>
             </View>
@@ -110,7 +124,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 26,
         fontWeight: "bold",
-        color: "#d32f2f",
+        color: "#1a1a1a",
         textAlign: "center",
         marginBottom: 10,
     },
@@ -137,6 +151,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 15,
         fontSize: 16,
+        color: "#000",
     },
     button: {
         backgroundColor: "#1976d2",
